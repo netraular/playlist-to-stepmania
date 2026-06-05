@@ -186,18 +186,38 @@ def write_csv(songs: list[dict], path: Path) -> None:
             w.writerow(s)
 
 
-def render_rows(songs: list[dict]) -> str:
-    """Genera el HTML de las filas <tr> de la tabla de canciones."""
+def render_rows(songs: list[dict], status_map: dict | None = None) -> str:
+    """Genera el HTML de las filas <tr> de la tabla de canciones.
+
+    Si se pasa ``status_map`` (dict video_id -> estado), se anade una columna
+    interactiva con botones para marcar cada cancion como descargada / no
+    encontrada / pendiente. El informe estatico no lo usa.
+    """
     def esc(x: str) -> str:
         return html.escape(x or "")
 
+    interactive = status_map is not None
     rows = []
     for s in songs:
         title_disp = esc(s["song"])
         artist_disp = f'<span class="artist">{esc(s["artist"])}</span> – ' if s["artist"] else ""
         feat_disp = f' <span class="feat">feat. {esc(s["feat"])}</span>' if s["feat"] else ""
+
+        status_cell = ""
+        row_attrs = ""
+        if interactive:
+            vid = esc(s.get("video_id", ""))
+            state = (status_map or {}).get(s.get("video_id", ""), "pending")
+            row_attrs = f' data-vid="{vid}" data-status="{esc(state)}"'
+            status_cell = f"""
+          <td class="status">
+            <button class="sbtn ok"      data-set="downloaded" title="Descargada">✔</button>
+            <button class="sbtn missing" data-set="notfound"   title="No encontrada">✖</button>
+            <button class="sbtn clear"   data-set="pending"    title="Pendiente">○</button>
+          </td>"""
+
         rows.append(f"""
-        <tr>
+        <tr{row_attrs}>
           <td class="num">{s['index']}</td>
           <td class="title">{artist_disp}{title_disp}{feat_disp}
               <div class="raw">{esc(s['raw_title'])}</div></td>
@@ -206,7 +226,7 @@ def render_rows(songs: list[dict]) -> str:
             <a class="btn ziv" href="{esc(s['ziv'])}" target="_blank">Zenius-I-vanisher</a>
             <a class="btn smo" href="{esc(s['smo'])}" target="_blank">StepManiaOnline</a>
             <a class="btn gg"  href="{esc(s['google'])}" target="_blank">Google</a>
-          </td>
+          </td>{status_cell}
         </tr>""")
     return "".join(rows)
 

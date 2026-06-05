@@ -4,3 +4,7 @@ __pycache__/
 
 # Audio descargado (puede ser muy pesado)
 *_audio/
+
+# Estado local de canciones (descargada / no encontrada) - no subir
+song_status.json
+song_status.json.tmp

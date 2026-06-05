@@ -77,6 +77,22 @@ Se abre un formulario, pegas la URL de la playlist, pulsas **Buscar** y te
 muestra la tabla con los enlaces de búsqueda de cada canción. Para parar el
 servidor, pulsa `Ctrl+C`.
 
+### Marcar canciones como descargadas / no encontradas
+
+En la web local, cada canción tiene tres botones de estado:
+
+- ✔ **Descargada**
+- ✖ **No encontrada**
+- ○ **Pendiente** (estado por defecto, borra la marca)
+
+El estado se guarda **en local** en `song_status.json` (identificado por el ID
+del vídeo de YouTube). Si vuelves a cargar la misma playlist —o cualquier otra
+que comparta canciones— se recupera automáticamente el estado guardado y se
+muestra un contador de cuántas llevas descargadas / no encontradas.
+
+> El archivo `song_status.json` está en `.gitignore`, por lo que **no se sube a
+> GitHub**: es solo tu seguimiento personal.
+
 ## Cómo jugar las canciones encontradas
 
 1. Abre el informe HTML y pulsa los botones de búsqueda de cada canción.
