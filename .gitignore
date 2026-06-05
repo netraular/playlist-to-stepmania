@@ -8,3 +8,9 @@ __pycache__/
 # Estado local de canciones (descargada / no encontrada) - no subir
 song_status.json
 song_status.json.tmp
+
+# Informes generados (regenerables con el script / la web)
+playlist_stepmania.csv
+playlist_stepmania.html
+*_stepmania.csv
+*_stepmania.html
