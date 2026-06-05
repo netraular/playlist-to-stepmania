@@ -1,0 +1,6 @@
+# Python
+__pycache__/
+*.pyc
+
+# Audio descargado (puede ser muy pesado)
+*_audio/
