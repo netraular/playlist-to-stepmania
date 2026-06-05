@@ -224,9 +224,13 @@ def render_rows(songs: list[dict], status_map: dict | None = None) -> str:
     interactive = status_map is not None
     rows = []
     for s in songs:
-        title_disp = esc(s["song"])
-        artist_disp = f'<span class="artist">{esc(s["artist"])}</span> – ' if s["artist"] else ""
-        feat_disp = f' <span class="feat">feat. {esc(s["feat"])}</span>' if s["feat"] else ""
+        artist = esc(s["artist"])
+        title = esc(s["song"])
+        artist_disp = (f'<span class="artist copyable" data-copy="{artist}" '
+                       f'title="Clic para copiar el artista">{artist}</span>') if s["artist"] else ""
+        title_disp = (f'<span class="song copyable" data-copy="{title}" '
+                      f'title="Clic para copiar el título">{title}</span>')
+        feat_disp = f'<span class="feat">feat. {esc(s["feat"])}</span>' if s["feat"] else ""
 
         status_cell = ""
         row_attrs = ""
@@ -268,9 +272,18 @@ REPORT_CSS = """
   td { padding:10px 14px; border-bottom:1px solid #23262c; vertical-align:top; }
   .num { color:#6a6f7a; width:42px; text-align:right; font-variant-numeric:tabular-nums; }
   .title { font-size:15px; }
-  .artist { color:#cfa6ff; }
-  .feat { color:#8a8f99; font-size:12px; }
+  .artist { display:inline-block; font-size:11px; text-transform:uppercase; letter-spacing:.04em;
+            color:#cfa6ff; background:#241c38; border:1px solid #3a2e5c; border-radius:5px;
+            padding:1px 7px; margin-bottom:4px; }
+  .song { display:block; font-size:15px; font-weight:600; color:#f2f2f5; }
+  .feat { display:block; color:#8a8f99; font-size:12px; margin-top:2px; }
   .raw { color:#6a6f7a; font-size:11px; margin-top:3px; }
+  .copyable { cursor:pointer; position:relative; }
+  .copyable:hover { filter:brightness(1.2); text-decoration:underline dotted; }
+  .copyable.copied::after {
+      content:"Copiado ✓"; position:absolute; left:0; top:-22px; white-space:nowrap;
+      background:#1f9d57; color:#fff; font-size:11px; text-transform:none; letter-spacing:0;
+      padding:2px 7px; border-radius:5px; pointer-events:none; z-index:5; }
   .links { white-space:nowrap; }
   .btn { display:inline-block; margin:2px 4px 2px 0; padding:5px 10px; border-radius:6px;
           font-size:12px; text-decoration:none; color:#fff; }
@@ -280,6 +293,44 @@ REPORT_CSS = """
   .gg  { background:#444b57; }
   .btn:hover { filter:brightness(1.15); }
   tbody tr:hover { background:#171a1f; }
+"""
+
+
+# JS para copiar al portapapeles al hacer clic en artista/titulo (.copyable).
+# Incluye fallback con execCommand para contextos file:// donde la Clipboard
+# API puede no estar disponible.
+COPY_JS = """
+<script>
+(function () {
+  function flash(el) {
+    el.classList.add('copied');
+    setTimeout(function () { el.classList.remove('copied'); }, 900);
+  }
+  function copyText(text, el) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { flash(el); })
+        .catch(function () { fallback(text, el); });
+    } else {
+      fallback(text, el);
+    }
+  }
+  function fallback(text, el) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); flash(el); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest('.copyable');
+    if (!el) return;
+    copyText(el.getAttribute('data-copy') || el.textContent, el);
+  });
+})();
+</script>
 """
 
 
@@ -300,6 +351,7 @@ def write_html(songs: list[dict], path: Path, playlist_url: str) -> None:
 <table><tbody>
 {render_rows(songs)}
 </tbody></table>
+{COPY_JS}
 </body></html>"""
     path.write_text(doc, encoding="utf-8")
 

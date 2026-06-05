@@ -28,7 +28,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from playlist_to_stepmania import REPORT_CSS, extract_playlist, render_rows
+from playlist_to_stepmania import COPY_JS, REPORT_CSS, extract_playlist, render_rows
 
 
 # --- Estado local (no se sube a GitHub) -------------------------------------
@@ -175,7 +175,7 @@ def render_results(url: str) -> bytes:
 <table><tbody>
 {render_rows(songs, status_map=status_map)}
 </tbody></table>"""
-    return page(body, f"Playlist -> StepMania ({len(songs)} canciones)", scripts=STATUS_JS)
+    return page(body, f"Playlist -> StepMania ({len(songs)} canciones)", scripts=STATUS_JS + COPY_JS)
 
 
 # --- Servidor ----------------------------------------------------------------
