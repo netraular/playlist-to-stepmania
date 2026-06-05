@@ -66,6 +66,22 @@ _NOISE_PATTERNS = [
 _FEAT_RE = re.compile(r"\s*[\(\[]?\s*(?:feat\.?|ft\.?|featuring)\s+([^\)\]\-|]+)[\)\]]?",
                       re.IGNORECASE)
 
+# Sufijos tipicos de nombres de canal de YouTube que no forman parte del artista.
+_UPLOADER_NOISE_RE = re.compile(
+    r"\s*(?:-\s*Topic|VEVO|Official|Officiel|Records?|Music|Channel|TV|Entertainment)\s*$",
+    re.IGNORECASE,
+)
+
+
+def _clean_uploader(name: str) -> str:
+    """Limpia el nombre del canal para usarlo como artista (quita '- Topic', etc.)."""
+    name = (name or "").strip()
+    prev = None
+    while name and name != prev:
+        prev = name
+        name = _UPLOADER_NOISE_RE.sub("", name).strip(" -–—·|").strip()
+    return name
+
 
 def _strip_feat(text: str) -> tuple[str, str]:
     """Quita 'feat./ft.' de 'text' y devuelve (texto_limpio, colaboradores)."""
@@ -77,8 +93,12 @@ def _strip_feat(text: str) -> tuple[str, str]:
     return text.strip(), feat
 
 
-def clean_title(raw: str) -> dict:
-    """Devuelve {artist, song, feat, query} a partir del titulo de YouTube."""
+def clean_title(raw: str, uploader: str = "") -> dict:
+    """Devuelve {artist, song, feat, query} a partir del titulo de YouTube.
+
+    Si el titulo no trae el patron 'Artista - Titulo', se usa el nombre del
+    canal (``uploader``) como artista de respaldo.
+    """
     title = raw.strip()
 
     # 1) Quitar etiquetas de ruido (official video, [MV], etc.).
@@ -105,6 +125,10 @@ def clean_title(raw: str) -> dict:
 
     song = song.strip(" -|–—~・　\"'“”「」").strip()
     artist = artist.strip(" -|–—~・　\"'“”").strip()
+
+    # 4) Si no hay artista en el titulo, usar el canal como respaldo.
+    if not artist:
+        artist = _clean_uploader(uploader)
 
     query = song if song else title
     return {
@@ -161,11 +185,12 @@ def extract_playlist(url: str) -> list[dict]:
         watch = e.get("url") or (f"https://www.youtube.com/watch?v={vid}" if vid else "")
         if watch and not watch.startswith("http"):
             watch = f"https://www.youtube.com/watch?v={watch}"
-        parsed = clean_title(raw_title)
+        uploader = e.get("uploader") or e.get("channel") or ""
+        parsed = clean_title(raw_title, uploader)
         songs.append({
             "index": i,
             "raw_title": raw_title,
-            "uploader": e.get("uploader") or e.get("channel") or "",
+            "uploader": uploader,
             "video_id": vid,
             "youtube_url": watch,
             **parsed,
